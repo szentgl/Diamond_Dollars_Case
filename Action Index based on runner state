@@ -1,0 +1,47 @@
+setwd("~/Downloads")
+
+PitchByPitchData <- read_csv("PitchByPitchData.csv")
+
+sprint_speed_df <- read_csv("sprint_speed.csv")
+
+PitchByPitchData_1b <- PitchByPitchData %>%
+  filter(is.na(on_2b), is.na(on_3b)) %>%
+  rename(player_id = on_1b)
+
+
+PitchByPitchData_not_1b <- PitchByPitchData %>%
+  filter(is.na(on_1b))
+
+On_base_AI <- PitchByPitchData %>% 
+  group_by(!is.na(on_1b), !is.na(on_2b), !is.na(on_3b)) %>%
+  summarize(action_index = (sum(events %in% PAevents) - sum(events == "walk", na.rm = TRUE) - 
+                              sum(events == "hit_by_pitch", na.rm = TRUE) - sum(events == "strikeout", na.rm = TRUE)) / 
+              (sum(events %in% PAevents)) * 74.853, count = n())
+
+On_base_AI$prop_PA <- On_base_AI$count/(sum(On_base_AI$count))
+
+summarize(count = n())
+
+Not_on_1st <- PitchByPitchData %>% 
+  group_by(!is.na(on_1b), !is.na(on_2b), !is.na(on_3b)) %>%
+  summarize(action_index = (sum(events %in% PAevents) - sum(events == "walk", na.rm = TRUE) - 
+                              sum(events == "hit_by_pitch", na.rm = TRUE) - sum(events == "strikeout", na.rm = TRUE)) / 
+              (sum(events %in% PAevents)) * 74.853, count = n())
+
+Not_on_1st$prop_PA <- 100*(Not_on_1st$count/(sum(Not_on_1st$count)))
+
+Not_on_1st$action_index <- replace(Not_on_1st$action_index, 5, 56.23)
+
+Not_on_1st$wAI <- (Not_on_1st$action_index)*(Not_on_1st$prop_PA)
+
+mean(Not_on_1st$wAI)
+
+Not_on_1st$BigTot <- (Not_on_1st$action_index)*(Not_on_1st$count)
+
+mean(sum(Not_on_1st$BigTot)/sum(Not_on_1st$count))
+
+On_base_AI$BigTot <- (On_base_AI$action_index)*(On_base_AI$count)
+
+mean(sum(On_base_AI$BigTot)/sum(On_base_AI$count))
+
+mean(sum(Not_on_1st$BigTot)/sum(Not_on_1st$count)) - mean(sum(On_base_AI$BigTot)/sum(On_base_AI$count))
