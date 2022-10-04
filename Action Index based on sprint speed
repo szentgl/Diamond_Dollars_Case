@@ -1,0 +1,65 @@
+
+sprint_speed_df$name <- paste(sprint_speed_df$first_name, sprint_speed_df$last_name)
+
+sprint_speed_df <- sprint_speed_df %>% select(-c(first_name, last_name))
+
+PBP_and_ss <- inner_join(PitchByPitchData_1b, sprint_speed_df, by = "player_id")
+
+PAevents <- unique(PBP_and_ss$events)
+
+
+
+PAevents <- PAevents[!PAevents %in% c(NA, "caught_stealing_2b", "pickoff_caught_stealing_2b", "game_advisory", "pickoff_1b", "stolen_base_2b")]
+
+Summarized_df <- PBP_and_ss %>% 
+  group_by(player_id) %>%
+  summarize(action_index = (sum(events %in% PAevents) - sum(events == "walk", na.rm = TRUE) - 
+                              sum(events == "hit_by_pitch", na.rm = TRUE) - sum(events == "strikeout", na.rm = TRUE)) / 
+              (sum(events %in% PAevents)) * 74.853)
+
+sprint_speed_df <- left_join(sprint_speed_df, Summarized_df)                                                                      
+
+sprint_speed_df <- sprint_speed_df %>% select(c(name, player_id, sprint_speed, action_index, hp_to_1b, competitive_runs))
+
+summary(sprint_speed_df$sprint_speed)
+
+
+sprint_speed_df$slow <- ifelse(sprint_speed_df$sprint_speed <= 27.3, sprint_speed_df$action_index, NA)
+sprint_speed_df$fast <- ifelse(sprint_speed_df$sprint_speed >= 29.3, sprint_speed_df$action_index, NA)
+
+hist(sprint_speed_df$sprint_speed)
+
+abline(x = 29.3) + hist(sprint_speed_df$sprint_speed)
+  
+AI_ss_boxplot <- boxplot(sprint_speed_df$slow, sprint_speed_df$fast,
+        names = c("Slow runners", "Fast runners"),
+        col = c("yellow", "light blue"),
+        ylab = "Action Index",
+        main = "Action Index of Runners on First Based on Sprint Speed",
+        ylim = (c(40, 65)))
+
+ggplot(sprint_speed_df)+geom_freqpoly(aes(slow, y = (..count..)/sum(..count..)), col = c("yellow"))+geom_freqpoly(aes(fast, y = (..count..)/sum(..count..)), col = c("blue"))
+
+ggplot(sprint_speed_df, aes(x = slow, x = fast))
+
+summary(sprint_speed_df$slow)
+summary(sprint_speed_df$fast)
+
+sprint_speed_df_filtered <- sprint_speed_df %>%
+  filter(competitive_runs >= 50, sprint_speed >= 29)
+
+mean(sprint_speed_df_filtered$action_index, rm.na = TRUE)
+
+PitchByPitchData$lead_runner_on_1b <- ifelse(!is.na(PitchByPitchData$on_3b) | !is.na(PitchByPitchData$on_2b) | !is.na(PitchByPitchData$on_1b), 1, 0)
+
+mean(PitchByPitchData$lead_runner_on_1b)
+
+PitchbyPitchData_NA_test <- PitchByPitchData %>%
+  group_by(game_year, if_fielding_alignment) %>%
+  summarize(count = n())
+
+Not_on_1st$BigTot <- (Not_on_1st$action_index)*(Not_on_1st$count)
+
+mean(sum(Not_on_1st$BigTot)/sum(Not_on_1st$count))
+
+
